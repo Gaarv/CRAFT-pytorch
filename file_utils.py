@@ -25,9 +25,9 @@ def list_files(in_path):
                 gt_files.append(os.path.join(dirpath, file))
             elif ext == '.zip':
                 continue
-    # img_files.sort()
-    # mask_files.sort()
-    # gt_files.sort()
+    img_files.sort()
+    mask_files.sort()
+    gt_files.sort()
     return img_files, mask_files, gt_files
 
 def saveResult(img_file, img, boxes, dirname='./result/', verticals=None, texts=None):
@@ -47,7 +47,7 @@ def saveResult(img_file, img, boxes, dirname='./result/', verticals=None, texts=
 
         # result directory
         res_file = dirname + "res_" + filename + '.txt'
-        res_img_file = dirname + "res_" + filename + '.jpg'
+        res_img_file = dirname + "res_" + filename + file_ext
 
         if not os.path.isdir(dirname):
             os.mkdir(dirname)
