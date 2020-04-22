@@ -40,7 +40,14 @@ def copyStateDict(state_dict):
     return new_state_dict
 
 def str2bool(v):
-    return v.lower() in ("yes", "y", "true", "t", "1")
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 parser = argparse.ArgumentParser(description='CRAFT Text Detection')
 parser.add_argument('--trained_model', default='weights/craft_mlt_25k.pth', type=str, help='pretrained model')
@@ -55,6 +62,9 @@ parser.add_argument('--show_time', default=False, action='store_true', help='sho
 parser.add_argument('--test_folder', default='/data/', type=str, help='folder path to input images')
 parser.add_argument('--refine', default=False, action='store_true', help='enable link refiner')
 parser.add_argument('--refiner_model', default='weights/craft_refiner_CTW1500.pth', type=str, help='pretrained refiner model')
+parser.add_argument('--save_bboxes', default=True, type=str2bool, help='save bounding boxes as cropped images')
+parser.add_argument('--save_result', default=False, type=str2bool, help='save result image with bounding boxes')
+parser.add_argument('--output_folder', default='./result/', type=str, help='folder path to output images')
 
 args = parser.parse_args()
 
@@ -62,7 +72,7 @@ args = parser.parse_args()
 """ For test images in a folder """
 image_list, _, _ = file_utils.get_files(args.test_folder)
 
-result_folder = './result/'
+result_folder = args.output_folder
 if not os.path.isdir(result_folder):
     os.mkdir(result_folder)
 
@@ -170,14 +180,16 @@ if __name__ == '__main__':
         filename, file_ext = os.path.splitext(os.path.basename(image_path))
         
         # save cropped boxes
-        for i, bbs in enumerate(bboxes):
-            crop = bounding_box(bbs)
-            cropped = image[crop[0][1]:crop[1][1],crop[0][0]:crop[1][0]]
-            cv2.imwrite(result_folder + '/res_' + filename + '_cropped_' + str(i) + file_ext, cropped)
+        if args.save_bboxes:
+            for i, bbs in enumerate(bboxes):
+                crop = bounding_box(bbs)
+                cropped = image[crop[0][1]:crop[1][1],crop[0][0]:crop[1][0]]
+                cv2.imwrite(result_folder + '/res_' + filename + '_cropped_' + str(i).zfill(4) + file_ext, cropped)
 
         # save score text
-        mask_file = result_folder + "/res_" + filename + '_mask' + file_ext
-        cv2.imwrite(mask_file, score_text)
-        file_utils.saveResult(image_path, image[:,:,::-1], polys, dirname=result_folder)
+        if args.save_result:
+            mask_file = result_folder + "/res_" + filename + '_mask' + file_ext
+            cv2.imwrite(mask_file, score_text)
+            file_utils.saveResult(image_path, image[:,:,::-1], polys, dirname=result_folder)
 
     print("elapsed time : {}s".format(time.time() - t))
